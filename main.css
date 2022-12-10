@@ -1,0 +1,12 @@
+
+:root {
+	--width: 700px;
+  --height: 500px;
+}
+.game {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: var(--width);
+  height: var(--height);
+}

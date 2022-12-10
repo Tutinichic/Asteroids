@@ -1,16 +1,17 @@
     //frames
     const FPS = 60;
+    const SCALE = 1.3;
     //space honey
-    const SPACE = 0.7; // (0 => 1)
+    const SPACE = 1; // (0 => 1)
     //ship
     const SHIP_LIVES = 3;
-    const SHIP_SIZE = 30;
-    const SHIP_MOVE = 5;
-    const ROT_SPEED = 360;
+    const SHIP_SIZE = 30 / SCALE;
+    const SHIP_MOVE = 1.3 / SCALE;
+    const ROT_SPEED = 360 / SCALE;
     //asteroid
     const ASTR_NUM = 3;
-    const ASTR_SIZE = 100;
-    const ASTR_SPEED = 50;
+    const ASTR_SIZE = 100 / SCALE;
+    const ASTR_SPEED = 50  / SCALE;
     const ASTR_VERT = 10;
     const ASTR_ANGLES = 0.3; // (0 => 1)
     //ship dead
@@ -19,12 +20,12 @@
     const SHIP_BLINK = 0.3;
     //laser
     const LASER_MAX = 10;
-    const LASER_SPEED = 500;
-    const LASER_DIST = 0.6;
+    const LASER_SPEED = 500 / SCALE;
+    const LASER_DIST = 0.6 / SCALE;
     const LASER_BOOM = 0.1;
     //text
     const TEXT_TIME = 2.5;
-    const TEXT_SIZE = 40;
+    const TEXT_SIZE = 40 / SCALE;
     //score
     const SCORE_ABIG = 20;
     const SCORE_AMED = 50;
@@ -32,6 +33,7 @@
     const SAVE_SCORE = "highscore";
     //debug
     const SHOW_COLISION = false;
+    let START_PLAY = false;
     
     let canv = document.getElementById("canvas");
     let ctx = canv.getContext("2d");
@@ -44,9 +46,7 @@
 
     setInterval(update, 1000 / FPS);
 
-
     //game
-
     function asteroidBelt() { //random Aspawn
       asteroids = [];
       let x,y;
@@ -95,10 +95,11 @@
       return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
     }
 
-    function drawTrian(x, y, position, colour = "white") {
+    function drawTrian(x, y, position, colour = "rgba(0,0,0,0.5)", center = "rgba(255,182,193,0.5)") {
       ctx.strokeStyle = colour; 
       ctx.lineWidth = SHIP_SIZE / 20;
       //draw ship
+      ctx.fillStyle = center;
       ctx.beginPath();
       ctx.moveTo(
       x + 4 / 3 * ship.radius * Math.cos(position),
@@ -114,6 +115,7 @@
       );
       ctx.closePath();
       ctx.stroke();
+      ctx.fill();
     }
 
     function deadShip() {
@@ -124,7 +126,6 @@
       ship.gameOver = true;
       text = "Game Over";
       textAlpha = 1.0;
-      //localStorage.clear();
     }
 
     //WASD
@@ -256,7 +257,7 @@
       //asteroid
       let x, y, radius, position, vert, mod;
       for (let i = 0; i < asteroids.length; i++) {
-        ctx.strokeStyle = "slategrey";
+        ctx.strokeStyle = "rgba(0,0,0,0.5)";
         ctx.lineWidth = SHIP_SIZE / 20;
 
         x = asteroids[i].x;
@@ -266,6 +267,7 @@
         vert = asteroids[i].vert;
         mod = asteroids[i].mod;
 
+        ctx.fillStyle = "rgba(128,128,128,0.5)";
         ctx.beginPath();
         ctx.moveTo(
           x + radius * mod[0] * Math.cos(position),
@@ -280,6 +282,7 @@
         }
         ctx.closePath();
         ctx.stroke();
+        ctx.fill();
         //debug
         if(SHOW_COLISION) {
           ctx.strokeStyle = " lime";
@@ -295,7 +298,7 @@
       let blink = ship.blinkNum % 2 == 0;
       //ship tale
       if (ship.moving && !ship.gameOver) {
-        ship.move.x += SHIP_MOVE * Math.cos(ship.position) / FPS;
+        ship.move.x += SHIP_MOVE * Math.cos(ship.position) / FPS ;
         ship.move.y -= SHIP_MOVE * Math.sin(ship.position) / FPS;
 
         if(!boom && blink) {
@@ -529,8 +532,9 @@
       let lifeColour;
       for (let i = 0; i < lives; i++) {
         let boom = ship.dead > 0;
-        lifeColour = boom && i == lives - 1 ? "red" : "white";
-        drawTrian(SHIP_SIZE + i * SHIP_SIZE * 1.2, SHIP_SIZE, 0.5 * Math.PI, lifeColour);
+        lifeColour = boom && i == lives - 1 ? "red" : "rgba(0,0,0,0.5)";
+        lifeCenter = boom && i == lives - 1 ? "red" : "rgba(255,182,193,0.5)";
+        drawTrian(SHIP_SIZE + i * SHIP_SIZE * 1.2, SHIP_SIZE, 0.5 * Math.PI, lifeColour, lifeCenter);
       }
     }
 
@@ -562,28 +566,52 @@
       }
     }
 
-    function update() {
-      //background
+    function loadScreen() {
       ctx.fillStyle = "black";
       ctx.fillRect(0, 0, canv.width, canv.height);
-      //asteroid
-      drawAsteroid()
-      //ship
-      drawShip();
-      //lasers
-      drawLaser();
-      //draw lives
-      drawLives();
-      //draw score
-      drawText();
-      //laser VS asteroid
-      lVSa();
-      //boom
-      boom();
-      //teleport
-      teleport();
-      //laser move
-      lMove();   
-      //asteroid move
-      aMove();  
+      let img = new Image();
+      img.src = "img/btn.png";
+      ctx.drawImage(img, (canv.width / 3), (canv.height / 3), canv.width / 3, canv.height / 3);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "white";
+      ctx.font = TEXT_SIZE + "px dejavu sens mono";
+      ctx.fillText("Click to START", canv.width / 2, canv.height / 1.3)
+    }
+
+    function update() {
+      
+      if(START_PLAY){
+        //new background
+        let space = new Image();
+        space.src = "img/space.jpg";
+        ctx.drawImage(space, 0, 0, canv.width, canv.height);  
+        //asteroid
+        drawAsteroid()
+        //ship
+        drawShip();
+        //lasers
+        drawLaser();
+        //draw lives
+        drawLives();
+        //draw score
+        drawText();
+        //laser VS asteroid
+        lVSa();
+        //boom
+        boom();
+        //teleport
+        teleport();
+        //laser move
+        lMove();   
+        //asteroid move
+        aMove(); 
+      } else {
+        //background
+        loadScreen();
+        canv.addEventListener('click', e => {
+          localStorage.clear();
+          START_PLAY = true;
+        });
+      }
     }
